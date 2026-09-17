@@ -1,0 +1,18 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default permissions for the main window: core window/app APIs, plus a save-file dialog and permission to write only to the exact path the user picks through it. No read access, no other filesystem access, no shell/process/network capability is granted.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:allow-save",
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [
+        { "path": "$HOME/**" }
+      ]
+    }
+  ]
+}

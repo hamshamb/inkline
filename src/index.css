@@ -1,0 +1,212 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Dark palette (default). Values are deliberately restrained — Inkline is
+     a quiet, editorial writing tool, not a bright SaaS product. */
+  --color-bg: #0b0c0e;
+  --color-chrome: #101114;
+  --color-editor: #0d0e10;
+  --color-surface: #131418;
+  --color-elevated: #16171c;
+  --color-hover: #17181c;
+  --color-active: #1d1f25;
+  --color-border: rgb(255 255 255 / 0.065);
+  --color-border-strong: rgb(255 255 255 / 0.11);
+  --color-text: #e8e9ec;
+  --color-secondary: #999ca5;
+  --color-muted: #666a73;
+  --color-accent: #7687f5;
+  --color-accent-hover: #8b9af7;
+  --color-accent-text: #ffffff;
+  --color-success: #5cb787;
+  --color-warning: #c99a52;
+  --color-danger: #de6b71;
+
+  --animate-fade-in: fade-in 120ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+:root[data-theme='light'] {
+  --color-bg: #f5f5f3;
+  --color-chrome: #efefec;
+  --color-editor: #fafaf8;
+  --color-surface: #ffffff;
+  --color-elevated: #ffffff;
+  --color-hover: #eaeae6;
+  --color-active: #e1e2dd;
+  --color-border: rgb(20 20 20 / 0.09);
+  --color-border-strong: rgb(20 20 20 / 0.16);
+  --color-text: #202124;
+  --color-secondary: #65676d;
+  --color-muted: #97999e;
+  --color-accent: #5367d8;
+  --color-accent-hover: #4257c2;
+  --color-accent-text: #ffffff;
+  --color-success: #2f8f61;
+  --color-warning: #9c7128;
+  --color-danger: #c14f56;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Rich editor prose styling */
+.inkline-rich-prose {
+  outline: none;
+}
+.inkline-rich-prose p {
+  margin: 0 0 0.85em;
+}
+.inkline-rich-prose h1,
+.inkline-rich-prose h2,
+.inkline-rich-prose h3 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.4em 0 0.5em;
+}
+.inkline-rich-prose h1 {
+  font-size: 1.75em;
+}
+.inkline-rich-prose h2 {
+  font-size: 1.4em;
+}
+.inkline-rich-prose h3 {
+  font-size: 1.15em;
+}
+.inkline-rich-prose h1:first-child,
+.inkline-rich-prose h2:first-child,
+.inkline-rich-prose h3:first-child,
+.inkline-rich-prose p:first-child {
+  margin-top: 0;
+}
+.inkline-rich-prose ul,
+.inkline-rich-prose ol {
+  margin: 0 0 0.85em;
+  padding-left: 1.4em;
+}
+.inkline-rich-prose ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0.2em;
+}
+.inkline-rich-prose ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+.inkline-rich-prose ul[data-type='taskList'] li > label {
+  margin-top: 0.3em;
+}
+.inkline-rich-prose ul[data-type='taskList'] li > div {
+  flex: 1;
+}
+.inkline-rich-prose blockquote {
+  margin: 0 0 0.85em;
+  padding-left: 1em;
+  border-left: 3px solid var(--color-border-strong);
+  color: var(--color-muted);
+}
+.inkline-rich-prose code {
+  background: var(--color-elevated);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+.inkline-rich-prose pre {
+  background: var(--color-elevated);
+  border-radius: 8px;
+  padding: 0.85em 1em;
+  overflow-x: auto;
+  margin: 0 0 0.85em;
+}
+.inkline-rich-prose pre code {
+  background: none;
+  padding: 0;
+}
+.inkline-rich-prose hr {
+  border: none;
+  border-top: 1px solid var(--color-border-strong);
+  margin: 1.5em 0;
+}
+.inkline-rich-prose a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.inkline-rich-prose mark {
+  border-radius: 3px;
+  padding: 0 0.1em;
+}
+.inkline-rich-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+/* Print styles: exported/printed documents should look like clean pages,
+   not the app chrome. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-root,
+  #print-root * {
+    visibility: visible;
+  }
+  #print-root {
+    position: absolute;
+    inset: 0;
+    background: white;
+    color: black;
+  }
+}

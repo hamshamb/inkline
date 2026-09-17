@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a reproducible problem in Inkline
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve Inkline. Do not include private document content; use a minimal synthetic example.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Web browser
+        - Installed PWA
+        - Windows desktop
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Inkline version
+      placeholder: e.g. 1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Explain the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Create a Markdown document
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Additional context
+      description: Browser/Windows version, screenshots, and any non-sensitive diagnostics.
