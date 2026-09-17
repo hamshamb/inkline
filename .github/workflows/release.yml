@@ -1,0 +1,187 @@
+name: Release
+
+# Triggered by pushing a version tag, e.g.:
+#   git tag v1.0.0 && git push origin v1.0.0
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+env:
+  # Node version pinned to match local development (see package.json engines
+  # expectations / README build instructions).
+  NODE_VERSION: 22
+
+jobs:
+  # Fast, OS-agnostic gate: fails fast before we spend windows-latest
+  # minutes on a Rust/Tauri build if the web app itself is broken.
+  quality:
+    name: Lint, typecheck, unit tests, web build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies (reproducible)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production web build
+        run: npm run build
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+  build-windows:
+    name: Build Windows desktop installer
+    needs: quality
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies (reproducible)
+        run: npm ci
+
+      - name: Set up Rust (stable, MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Cargo/Tauri build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Derive release version from tag
+        id: version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build Windows installers (NSIS + MSI)
+        # windows-latest ships the MSVC Build Tools and WebView2 runtime
+        # Tauri needs; no extra native dependency installation required.
+        run: npm run desktop:build -- --bundles nsis,msi
+
+      - name: Collect, rename, and checksum artifacts
+        id: artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.version.outputs.version }}"
+          out_dir="release-artifacts"
+          mkdir -p "$out_dir"
+
+          bundle_dir="src-tauri/target/release/bundle"
+
+          nsis_src=$(find "$bundle_dir/nsis" -maxdepth 1 -iname "*.exe" | head -n1)
+          if [ -z "$nsis_src" ]; then
+            echo "::error::No NSIS .exe installer was produced under $bundle_dir/nsis"
+            exit 1
+          fi
+          nsis_dest="$out_dir/Inkline_${version}_windows_x64_setup.exe"
+          cp "$nsis_src" "$nsis_dest"
+
+          msi_src=$(find "$bundle_dir/msi" -maxdepth 1 -iname "*.msi" 2>/dev/null | head -n1 || true)
+          if [ -n "$msi_src" ]; then
+            msi_dest="$out_dir/Inkline_${version}_windows_x64.msi"
+            cp "$msi_src" "$msi_dest"
+          else
+            echo "::warning::No MSI installer was produced; continuing with the NSIS installer only."
+          fi
+
+          (
+            cd "$out_dir"
+            sha256sum * > SHA256SUMS.txt
+          )
+
+          echo "Artifacts:"
+          ls -la "$out_dir"
+
+      - name: Upload build artifacts (workflow run)
+        uses: actions/upload-artifact@v7
+        with:
+          name: inkline-windows-x64-${{ steps.version.outputs.version }}
+          path: release-artifacts/*
+          if-no-files-found: error
+
+      - name: Create or update GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${{ steps.version.outputs.version }}"
+
+          notes="Inkline ${version} — Windows desktop build.
+
+          ### Installers
+          - \`Inkline_${version}_windows_x64_setup.exe\` — NSIS installer (recommended)
+          - \`Inkline_${version}_windows_x64.msi\` — MSI installer, if present in this release
+
+          ### Verify your download
+          Compare against \`SHA256SUMS.txt\`:
+
+              certutil -hashfile Inkline_${version}_windows_x64_setup.exe SHA256
+
+          ### Signing
+          These installers are **not code-signed**. Windows SmartScreen may warn on
+          first run — this is expected for an unsigned open-source build, not an
+          indication the file was tampered with. See the project README for details
+          and for how to verify the checksum above instead.
+
+          ### Local storage note
+          The desktop app stores its documents in its own local WebView data
+          directory, separate from any browser profile. Use Settings → Backup &
+          restore in either build to move documents between them. See the README's
+          \"Browser vs. desktop storage\" section."
+
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" release-artifacts/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$tag" release-artifacts/* \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Inkline $version" \
+              --notes "$notes"
+          fi
+
+# ---------------------------------------------------------------------------
+# Code signing (not yet configured)
+# ---------------------------------------------------------------------------
+# This workflow intentionally ships unsigned Windows installers. To add
+# signing later without restructuring this file:
+#   1. Store your certificate (base64-encoded .pfx) and its password as
+#      repository secrets, e.g. WINDOWS_CERTIFICATE and
+#      WINDOWS_CERTIFICATE_PASSWORD — never commit them.
+#   2. Before "Build Windows installers", decode the secret to a temp .pfx
+#      file and set the environment variables Tauri's NSIS/WiX bundler reads
+#      for signing (see https://v2.tauri.app/distribute/sign/windows/).
+#   3. Remove the "not code-signed" note from the release body above.
+# No signing secrets are read or required by this workflow as written.

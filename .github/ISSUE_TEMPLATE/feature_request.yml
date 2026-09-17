@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest a focused improvement to Inkline
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Inkline prioritizes local ownership, privacy, and a calm writing experience. Accounts, cloud sync, collaboration, AI, and image embedding are intentionally outside v1.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What writing workflow is difficult today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful change.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Product principles
+      options:
+        - label: This can work fully offline without uploading document content.
+          required: true
